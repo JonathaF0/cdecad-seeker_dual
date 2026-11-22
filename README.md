@@ -413,11 +413,19 @@ exports.seeker_dual:SetPlateDesigns({
         },
     },
     byPlate = { RANGY = 'design-id' },     -- plate (spaces ignored) -> design id
+    default = 'design-id',                  -- optional: design for every other plate
 })
 ```
 
-Call it again whenever the set changes. The artwork is sent to the display once; each update
-only names the design for the plate on screen, and a plate is only redrawn when that changes.
+`default` (also read as `defaultDesignId`) is the design for any plate `byPlate` does not name,
+live or locked, so a server whose plates all share one look shows it on every car, not only on
+the ones the CAD has a record for. It must be one of the ids in `designs`; one that is not is
+ignored. Leave it out and those plates stay on the stock GTA plate. A reader with no plate in
+view shows the stock plate either way.
+
+Call it again whenever the set changes, including to drop the default. The artwork is sent to
+the display once; each update only names the design for the plate on screen, and a plate is
+only redrawn when that changes.
 
 ## Events
 

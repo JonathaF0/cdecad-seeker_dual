@@ -953,7 +953,10 @@ end
 --- The artwork is large, so it goes to the page once, the next time the display updates,
 --- and each update after that only carries the id of the design for the plate on screen.
 --- The id is looked up once per plate change, not every tick.
+--- A plate byPlate does not name is drawn on the default design, when the CAD sent one,
+--- live or locked; with no default it stays on the stock plate.
 local plateDesignIds = {}          -- [plate with no spaces] = design id
+local defaultPlateDesignId = false -- design for every other plate, or false for the stock plate
 local plateDesignsForNui = nil     -- waiting to be sent to the page
 local lastDesignPlate = {}
 local lastDesignId = {}
@@ -963,6 +966,7 @@ local function plateDesignFor(which, plate)
     lastDesignPlate[which] = plate
     local key = tostring(plate or ''):gsub('%s', ''):upper()
     local id = plateDesignIds[key] or false
+    if not id and key ~= '' then id = defaultPlateDesignId end
     lastDesignId[which] = id
     return id
 end
@@ -977,7 +981,11 @@ exports('SetPlateDesigns', function(payload)
         local key = tostring(plate):gsub('%s', ''):upper()
         if key ~= '' and designs[id] then ids[key] = tostring(id) end
     end
+    -- Only a default the payload carries artwork for: one it does not would draw nothing.
+    local default = payload.default or payload.defaultDesignId
+    if default ~= nil and designs[default] then default = tostring(default) else default = false end
     plateDesignIds = ids
+    defaultPlateDesignId = default
     plateDesignsForNui = designs
     lastDesignPlate, lastDesignId = {}, {}
     return true
@@ -1349,7 +1357,7 @@ local function sendToNUI()
     end
 
     if plateDesignsForNui then
-        SendNUIMessage({ _type = 'plateDesigns', designs = plateDesignsForNui })
+        SendNUIMessage({ _type = 'plateDesigns', designs = plateDesignsForNui, default = defaultPlateDesignId or nil })
         plateDesignsForNui = nil
     end
     local frontPlateShown = Radar.frontPlateLocked and (Radar.frontLockedPlate or frontLivePlateText) or frontLivePlateText

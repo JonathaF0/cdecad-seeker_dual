@@ -445,8 +445,11 @@ function setPlateTextFit(el, textValue) {
 }
 
 /* Plate artwork from the server's CAD (SetPlateDesigns). Kept here once; each update only
-   names the design for the plate on screen, and a slot is only restyled when that changes. */
+   names the design for the plate on screen, and a slot is only restyled when that changes.
+   The client names the CAD's default design for a plate with none of its own; a plate that
+   names a design this page does not hold is drawn on the default too, not on nothing. */
 let plateDesigns = {};
+let defaultPlateDesign = null;
 const shownDesign = { front: null, rear: null };
 
 function setPlateTextDesign(el, textValue, design, bg) {
@@ -465,8 +468,9 @@ function setPlateTextDesign(el, textValue, design, bg) {
 }
 
 function applyPlateDesign(slot, designId, bg, textEl) {
-    const design = designId ? plateDesigns[designId] : null;
-    const id = design ? designId : null;
+    let id = designId && plateDesigns[designId] ? designId : null;
+    if (designId && !id && defaultPlateDesign && plateDesigns[defaultPlateDesign]) id = defaultPlateDesign;
+    const design = id ? plateDesigns[id] : null;
     if (shownDesign[slot] === id) return !!design;
     shownDesign[slot] = id;
     if (!design) {
@@ -1130,6 +1134,7 @@ window.addEventListener('message', (event) => {
             break;
         case 'plateDesigns':
             plateDesigns = (data.designs && typeof data.designs === 'object') ? data.designs : {};
+            defaultPlateDesign = data.default && plateDesigns[data.default] ? String(data.default) : null;
             shownDesign.front = shownDesign.rear = undefined;
             break;
         case 'update':
